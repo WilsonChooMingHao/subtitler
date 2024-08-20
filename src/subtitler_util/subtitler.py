@@ -10,7 +10,7 @@ from gooey import Gooey, GooeyParser
 from datetime import datetime, timedelta
 try:
     from subtitler_util import VERSION, TEMP_DIR, DIR_DELIM
-    from subtitler_util.constants import SUPPORTED_TRANSLATORS, TRANSCRIPTION_SUPPORTED_LANGS, TRANSLATION_SUPPORTED_LANGS, GUI_MENU
+    from subtitler_util.constants import SUPPORTED_TRANSLATORS, TRANSCRIPTION_SUPPORTED_LANGS, TRANSLATION_SUPPORTED_LANGS, TRANSCRIPTION_SUPPORTED_MODELS, GUI_MENU
 except ModuleNotFoundError:
     from __init__ import VERSION, TEMP_DIR, DIR_DELIM
     from constants import SUPPORTED_TRANSLATORS, TRANSCRIPTION_SUPPORTED_LANGS, TRANSLATION_SUPPORTED_LANGS, GUI_MENU
@@ -44,9 +44,11 @@ def cleanup():
         os.remove(TEMP_DIR+DIR_DELIM+f)
     print("clean up done.")
 
-def init_model():
+def init_model(model_size: str):
     def load_model_pref():
-        if os.path.exists(".model_pref"):
+        if model_size is not None:
+            return model_size
+        elif os.path.exists(".model_pref"):
             with open(".model_pref") as f:
                 return f.readline()
         else:
@@ -188,7 +190,7 @@ def find_vid_files_in_dir(target_dir):
         [files_list.append(cwd+DIR_DELIM+afile) for afile in files if check_if_file_is_video(cwd+DIR_DELIM+afile)]
     return files_list
 
-def subtitle(vid_file_map: dict, audio_files: list, video_language: str, translation_languages: list, translation_service: str="google", translation_service_api_key: str = None, mode: str=None):
+def subtitle(vid_file_map: dict, audio_files: list, video_language: str, translation_languages: list, translation_service: str="google", translation_service_api_key: str = None, model_size: str = None, mode: str=None):
     
     def print_and_update_progress(update_progress=False):
         nonlocal current_step
@@ -200,7 +202,7 @@ def subtitle(vid_file_map: dict, audio_files: list, video_language: str, transla
     total_steps = 2
     current_step = 1
     print_and_update_progress()
-    model = init_model()
+    model = init_model(model_size)
     print_and_update_progress(update_progress=True)
     print("Done.")
     total_steps += (len(audio_files)*2) + (len(audio_files)*len(translation_languages)*2)
@@ -234,7 +236,7 @@ def process_args(args):
     elif args.video_dir is None:
         for f in [f for f in args.video_files if check_if_file_is_video(f)]:
             audio_files.append(gen_wav_file(f,vid_file_map))
-    subtitle(vid_file_map,audio_files,args.video_language,args.translation_languages, translation_service=args.translation_service, translation_service_api_key=args.translation_service_api_key, mode=args.mode)
+    subtitle(vid_file_map,audio_files,args.video_language,args.translation_languages, translation_service=args.translation_service, translation_service_api_key=args.translation_service_api_key, model_size=args.model_size, mode=args.mode)
     cleanup()
 
 def cli():
@@ -247,6 +249,7 @@ def cli():
     transcribe_group = parser.add_argument_group("Transcription Configuration")
     transcribe_group.add_argument("--video_language",help="Provide the language of the video(s). Set it to 'unknown' if you don't know and want AI to guess the language.(WARNING! This may be a bad-idea because the AI may make a mistake with language detection)",choices=TRANSCRIPTION_SUPPORTED_LANGS.keys(), required=True)
     transcribe_group.add_argument("--force_language_autodetect",help="force language detection for all videos even if you provide 'video language' parameter", action="store_true")
+    transcribe_group.add_argument("--model_size",help="Force specific whisper model size.", choices=TRANSCRIPTION_SUPPORTED_MODELS)
     translation_group = parser.add_argument_group("Translation Configuration")
     translation_group.add_argument("--translation_languages",help="select all the languages you want to also translate the subtitles to.",choices=TRANSLATION_SUPPORTED_LANGS.keys(), nargs="*")
     translation_group.add_argument("--translation_service", help="pick a translation service.",choices=SUPPORTED_TRANSLATORS, default="google")
@@ -273,6 +276,7 @@ def gui():
     transcribe_group = parser.add_argument_group("Transcription Configuration")
     transcribe_group.add_argument("--video_language",help="Provide the language of the video(s). Set it to 'unknown' if you don't know and want AI to guess the language.(WARNING! This may be a bad-idea because the AI may make a mistake with language detection)",widget="FilterableDropdown",choices=TRANSCRIPTION_SUPPORTED_LANGS.keys(), required=True)
     transcribe_group.add_argument("--force_language_autodetect",help="force language detection for all videos even if you provide 'video language' parameter", widget="BlockCheckbox", action="store_true")
+    transcribe_group.add_argument("--model_size",help="Force specific whisper model size.", choices=TRANSCRIPTION_SUPPORTED_MODELS)
     translation_group = parser.add_argument_group("Translation Configuration")
     translation_group.add_argument("--translation_languages",help="select all the languages you want to also translate the subtitles to.",widget="Listbox",choices=TRANSLATION_SUPPORTED_LANGS.keys(), nargs="*", gooey_options={'height':200})
     translation_group.add_argument("--translation_service", help="pick a translation service.",choices=SUPPORTED_TRANSLATORS, widget="Dropdown", default="google")
