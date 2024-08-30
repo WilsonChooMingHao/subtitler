@@ -160,16 +160,22 @@ def save_result_as_srt(result: dict, target_language: str, video_file_name: str,
         srt_file_name = ".".join(video_file_name.split(".")[:-1])+".default."+get_lang_iso_code(target_language)+".srt"
     else:
         srt_file_name = ".".join(video_file_name.split(".")[:-1])+"."+get_lang_iso_code(target_language)+".srt"
-    with open(srt_file_name,"w") as f:
-        for id, result_obj in result.items():
-            f.write(str(id)+"\n")
-            f.write(str(result_obj["start_time"])+" --> "+str(result_obj["end_time"])+"\n")
-            if os.name == 'nt':
+    if os.name == 'nt':
+        with open(srt_file_name,"w", encoding='cp850', errors='replace') as f:
+            for id, result_obj in result.items():
+                f.write(str(id)+"\n")
+                f.write(str(result_obj["start_time"])+" --> "+str(result_obj["end_time"])+"\n")
                 f.write(result_obj["text"].encode('cp850','replace').decode('cp850'))
-            else:
+                f.write("\n\n")
+        return srt_file_name
+    else:
+        with open(srt_file_name,"w") as f:
+            for id, result_obj in result.items():
+                f.write(str(id)+"\n")
+                f.write(str(result_obj["start_time"])+" --> "+str(result_obj["end_time"])+"\n")
                 f.write(result_obj["text"])
-            f.write("\n\n")
-    return srt_file_name
+                f.write("\n\n")
+        return srt_file_name
 
 def check_if_file_is_video(file):
     try:
