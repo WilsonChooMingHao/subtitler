@@ -62,7 +62,7 @@ def init_model(model_size: str):
         print(f"loading whisper's '{load_model_pref()}' model")
         return whisper.load_model(load_model_pref(),device=device)
     else:
-        model_sizes = ["large-v3","large-v2","large","medium","small","base","tiny"]
+        model_sizes = ["large-v3-turbo","large-v3","large-v2","large","medium","small","base","tiny"]
         for model_size in model_sizes:
             try:
                 model = whisper.load_model(model_size,device=device)
